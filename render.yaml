@@ -1,0 +1,23 @@
+# Render Blueprint: https://render.com/docs/blueprint-spec
+#
+# maskmen needs one long-running Node process -- Next and Socket.IO share it, and
+# rooms live in its memory. That is why it cannot run on Vercel's serverless
+# functions, and why this service must never scale past a single instance.
+services:
+  - type: web
+    name: maskmen
+    runtime: node
+    plan: free
+    # Dev dependencies (TypeScript, type packages) are needed to build.
+    buildCommand: npm ci --include=dev && npm run build
+    startCommand: npm start
+    healthCheckPath: /
+    autoDeploy: true
+    envVars:
+      - key: NODE_VERSION
+        value: "22"
+      - key: NEXT_TELEMETRY_DISABLED
+        value: "1"
+      # Other origins whose pages connect to this Socket.IO server (comma-separated).
+      - key: CORS_ORIGINS
+        value: https://maskmen.vercel.app
