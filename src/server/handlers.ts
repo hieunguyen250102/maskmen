@@ -7,6 +7,7 @@
  */
 
 import type { Server, Socket } from 'socket.io';
+import { authError, socketAuth } from 'oink-kit/server';
 import { applyMove, canPass, legalPlays } from '@/engine/rules.js';
 import { createGame, startNextSeason } from '@/engine/game.js';
 import { MAX_PLAYERS, type Move } from '@/engine/types.js';
@@ -40,6 +41,7 @@ import {
   type Room,
 } from './rooms.js';
 import { toGameView } from './view.js';
+import { auth, type User } from './auth.js';
 
 export interface SocketData {
   playerToken: string;
@@ -47,6 +49,8 @@ export interface SocketData {
   roomCode: string | null;
   /** Timestamps of recent chat messages, for rate limiting. */
   chatTimes: number[];
+  /** The email login from the handshake (socketAuth); null when missing or stale. */
+  user: User | null;
 }
 
 export type GameServer = Server<ClientToServerEvents, ServerToClientEvents, Record<string, never>, SocketData>;
@@ -122,7 +126,11 @@ async function afterStateChange(io: GameServer, room: Room): Promise<void> {
 }
 
 export function registerHandlers(io: GameServer): void {
+  // Anyone may connect; socket.data.user is set only for a valid login token.
+  io.use(socketAuth(auth));
+
   io.on('connection', (socket: GameSocket) => {
+    socket.emit('session', { user: socket.data.user ?? null });
     socket.data.roomCode = null;
     socket.data.chatTimes = [];
 
@@ -130,6 +138,9 @@ export function registerHandlers(io: GameServer): void {
       const nickname = sanitizeNickname(req.nickname ?? '');
       const token = typeof req.playerToken === 'string' ? req.playerToken.slice(0, 64) : '';
       if (!token) return ack(fail('thiếu mã người chơi'));
+      // An empty code creates a room, which needs a host account.
+      const denied = authError(socket.data.user, { host: !req.roomCode });
+      if (denied) return ack(fail(denied));
 
       socket.data.playerToken = token;
       socket.data.nickname = nickname;

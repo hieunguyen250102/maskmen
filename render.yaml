@@ -21,3 +21,14 @@ services:
       # Other origins whose pages connect to this Socket.IO server (comma-separated).
       - key: CORS_ORIGINS
         value: https://maskmen.vercel.app
+      # Signs login tokens; keep it stable or everyone is logged out.
+      - key: SESSION_SECRET
+        generateValue: true
+      # Shared mail relay (oink-kit's oink-mail on Vercel), e.g. https://oink-mail.vercel.app/api/send-code
+      - key: MAIL_RELAY_URL
+        sync: false
+      - key: MAIL_RELAY_SECRET
+        sync: false
+      # Emails allowed to create rooms, comma-separated. Empty = anyone who logs in.
+      - key: HOST_EMAILS
+        sync: false

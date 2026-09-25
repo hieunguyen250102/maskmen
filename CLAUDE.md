@@ -131,12 +131,31 @@ disconnected player on turn is auto-folded after 60s so one closed tab cannot fr
 `compactSeats()` runs once at deal time so that **a room seat index and an engine player index are
 the same number** everywhere else. Do not reintroduce a mapping layer.
 
+### Login
+
+Email-code login comes from the shared `oink-kit` package (github:hieunguyen250102/oink-kit), the same one
+the other Oink games use. `src/server/auth.ts` creates it; `server.ts` answers `POST /auth/request` and
+`/auth/verify` before handing the request to Next; `registerHandlers` installs `socketAuth`, and
+`room:join` refuses a socket without a login (an empty room code, i.e. creating a room, also needs
+`canHost` from `HOST_EMAILS`). The player token above is unchanged: the login is only a gate.
+
+On the client, `authClient` in `src/lib/socket.ts` keeps the login in `localStorage`
+(`maskmen.session.v1`) and sends it in the socket handshake; `useAccount()` reads it after mount (no
+SSR mismatch) and `<LoginForm>` shows on the landing page and on a room page opened without a login.
+Without a mail provider outside production the server prints the code and returns it as `devCode`,
+which is also how `tests/integration.test.ts` logs its clients in.
+
 ## Deploying
 
 Needs **one long-running Node process** (`npm start`): Next and Socket.IO share it and rooms live in
 its memory. Serverless hosts such as Vercel serve the pages but have no Socket.IO server behind
 `/socket.io`, so nothing can connect. `render.yaml` is a Render Blueprint for a single web service;
 never run more than one instance, or players will land on processes that do not know their room.
+
+Login env on Render: `SESSION_SECRET` (keep it stable or everyone is logged out), `MAIL_RELAY_URL` and
+`MAIL_RELAY_SECRET` (the shared oink-mail relay), and `HOST_EMAILS` (empty = anyone who logs in can create
+rooms). Pages hosted on Vercel call `/auth/*` on `NEXT_PUBLIC_SOCKET_URL`, so that origin must be in
+`CORS_ORIGINS`.
 
 ## Testing
 

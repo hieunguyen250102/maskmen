@@ -9,6 +9,7 @@ import type { AddressInfo } from 'node:net';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { Server } from 'socket.io';
 import { io as connect, type Socket } from 'socket.io-client';
+import { auth } from '@/server/auth.js';
 import { registerHandlers, type GameServer } from '@/server/handlers.js';
 import { resetRooms } from '@/server/rooms.js';
 import type { Move } from '@/engine/types.js';
@@ -43,8 +44,27 @@ interface Client {
   emit: <T>(event: string, ...args: unknown[]) => Promise<Ack<T>>;
 }
 
-function makeClient(): Client {
-  const socket = connect(`http://localhost:${port}`, { transports: ['websocket'] });
+let logins = 0;
+
+/**
+ * A login token for a fresh address. With no mail provider outside production
+ * the server hands the code straight back, the same shortcut the dev UI uses.
+ */
+async function loginToken(): Promise<string> {
+  const n = ++logins;
+  const email = `player${n}@test.local`;
+  const sent = await auth.requestCode(email, `test-${n}`);
+  if (!sent.ok || !sent.devCode) throw new Error('no dev code');
+  const verified = auth.verifyCode(email, sent.devCode, sent.challenge);
+  if (!verified.ok) throw new Error(verified.error);
+  return verified.token;
+}
+
+function makeClient({ loggedIn = true } = {}): Client {
+  const socket = connect(`http://localhost:${port}`, {
+    transports: ['websocket'],
+    auth: (cb) => (loggedIn ? void loginToken().then((token) => cb({ token })) : cb({})),
+  });
   clients.push(socket);
 
   const client: Client = {
@@ -238,6 +258,17 @@ describe('a room over the wire', () => {
     const results = [];
     for (let i = 0; i < 6; i++) results.push(await ana.emit('chat:send', { text: `spam ${i}` }));
     expect(results.some((r) => !r.ok)).toBe(true);
+  });
+
+  it('needs a login to create or join a room', async () => {
+    const ana = makeClient();
+    const { room } = await join(ana, '', 'Ana', 'token-ana');
+
+    const stranger = makeClient({ loggedIn: false });
+    for (const roomCode of ['', room.code]) {
+      const res = await stranger.emit('room:join', { roomCode, playerToken: 'token-x', nickname: 'X' });
+      expect(res).toMatchObject({ ok: false, error: 'Bạn cần đăng nhập trước' });
+    }
   });
 
   it('refuses an unknown room code', async () => {

@@ -3,6 +3,7 @@
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { Card } from '@/components/Card.js';
+import { AccountBar, LoginForm } from '@/components/LoginForm.js';
 import {
   CONNECT_TIMEOUT_MS,
   UNREACHABLE_MESSAGE,
@@ -11,6 +12,7 @@ import {
   getSocket,
   setNickname,
 } from '@/lib/socket.js';
+import { useAccount } from '@/lib/useAccount.js';
 import { MAX_NICKNAME_LENGTH, normalizeRoomCode } from '@/shared/protocol.js';
 
 /** The order the six cards fan out in on the landing page. */
@@ -22,6 +24,7 @@ export default function Landing() {
   const [code, setCode] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const { ready, account, login, logout } = useAccount();
 
   useEffect(() => setName(getNickname()), []);
 
@@ -74,41 +77,55 @@ export default function Landing() {
           </p>
         </div>
 
-        <div className="field">
-          <label htmlFor="nick">Tên của bạn</label>
-          <input
-            id="nick"
-            value={nickname}
-            maxLength={MAX_NICKNAME_LENGTH}
-            placeholder="Người chơi"
-            onChange={(e) => setName(e.target.value)}
-          />
-        </div>
+        {!ready ? null : !account ? (
+          <LoginForm onLogin={login} />
+        ) : (
+          <>
+            <AccountBar email={account.user.email} onLogout={logout} />
 
-        <button className="btn btn--primary btn--big" onClick={create} disabled={busy}>
-          {busy ? 'Đang dựng võ đài…' : 'Tạo phòng mới'}
-        </button>
+            <div className="field">
+              <label htmlFor="nick">Tên của bạn</label>
+              <input
+                id="nick"
+                value={nickname}
+                maxLength={MAX_NICKNAME_LENGTH}
+                placeholder="Người chơi"
+                onChange={(e) => setName(e.target.value)}
+              />
+            </div>
 
-        <div className="divider">hoặc vào phòng có sẵn</div>
+            {account.user.canHost ? (
+              <>
+                <button className="btn btn--primary btn--big" onClick={create} disabled={busy}>
+                  {busy ? 'Đang dựng võ đài…' : 'Tạo phòng mới'}
+                </button>
 
-        <div className="field">
-          <label htmlFor="code">Mã phòng</label>
-          <div className="row">
-            <input
-              id="code"
-              value={code}
-              placeholder="ABCD"
-              autoCapitalize="characters"
-              onChange={(e) => setCode(e.target.value.toUpperCase())}
-              onKeyDown={(e) => e.key === 'Enter' && join()}
-            />
-            <button className="btn" onClick={join}>
-              Vào phòng
-            </button>
-          </div>
-        </div>
+                <div className="divider">hoặc vào phòng có sẵn</div>
+              </>
+            ) : (
+              <p className="tagline tagline--small">Tài khoản này vào được phòng có sẵn, không tạo phòng mới được.</p>
+            )}
 
-        {error && <p className="form-error">{error}</p>}
+            <div className="field">
+              <label htmlFor="code">Mã phòng</label>
+              <div className="row">
+                <input
+                  id="code"
+                  value={code}
+                  placeholder="ABCD"
+                  autoCapitalize="characters"
+                  onChange={(e) => setCode(e.target.value.toUpperCase())}
+                  onKeyDown={(e) => e.key === 'Enter' && join()}
+                />
+                <button className="btn" onClick={join}>
+                  Vào phòng
+                </button>
+              </div>
+            </div>
+
+            {error && <p className="form-error">{error}</p>}
+          </>
+        )}
 
         <p className="tagline tagline--small">2–6 người chơi, không giới hạn người xem và trò chuyện.</p>
       </div>

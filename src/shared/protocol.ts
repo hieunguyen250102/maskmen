@@ -132,7 +132,16 @@ export interface ClientToServerEvents {
   'chat:send': (req: { text: string }, ack: (res: Ack) => void) => void;
 }
 
+/** The signed-in account, as the server sees it (see oink-kit). */
+export interface SessionUser {
+  id: string;
+  email: string;
+  canHost: boolean;
+}
+
 export interface ServerToClientEvents {
+  /** Sent on connect: who the login token belongs to, or null if it is missing or stale. */
+  session: (payload: { user: SessionUser | null }) => void;
   'room:state': (room: RoomView) => void;
   'game:view': (view: GameView | null) => void;
   'chat:history': (messages: ChatMessage[]) => void;

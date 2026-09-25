@@ -1,6 +1,7 @@
 'use client';
 
 import { io, type Socket } from 'socket.io-client';
+import { createAuthClient } from 'oink-kit/client';
 import type { ClientToServerEvents, ServerToClientEvents } from '@/shared/protocol.js';
 
 export type GameSocket = Socket<ServerToClientEvents, ClientToServerEvents>;
@@ -21,6 +22,15 @@ export const UNREACHABLE_MESSAGE =
  */
 const SOCKET_URL = process.env.NEXT_PUBLIC_SOCKET_URL ?? '';
 
+/**
+ * Email login (shared with the other Oink games through oink-kit). The auth
+ * routes live on the game server, next to Socket.IO.
+ */
+export const authClient = createAuthClient({
+  storagePrefix: 'maskmen',
+  serverUrl: SOCKET_URL || (typeof window === 'undefined' ? '' : window.location.origin),
+});
+
 let socket: GameSocket | null = null;
 
 /**
@@ -29,7 +39,8 @@ let socket: GameSocket | null = null;
  */
 export function getSocket(): GameSocket {
   if (!socket) {
-    const options = { autoConnect: true, transports: ['websocket', 'polling'] };
+    // `auth` is read on every (re)connect, so a fresh login takes effect on the next handshake.
+    const options = { autoConnect: true, transports: ['websocket', 'polling'], auth: authClient.socketAuth };
     socket = SOCKET_URL ? io(SOCKET_URL, options) : io(options);
   }
   return socket;

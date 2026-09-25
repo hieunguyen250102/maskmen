@@ -515,6 +515,57 @@ kbd {
   background: var(--line);
 }
 
+.login {
+  display: grid;
+  gap: 14px;
+}
+
+.login-code {
+  text-align: center;
+  font-size: 28px;
+  font-weight: 800;
+  letter-spacing: 0.5em;
+  /* balance the spacing letter-spacing leaves after the last digit */
+  text-indent: 0.5em;
+}
+
+.login-links {
+  display: flex;
+  justify-content: space-between;
+  font-size: 13px;
+}
+
+.link {
+  font: inherit;
+  color: var(--gold);
+  background: none;
+  border: 0;
+  padding: 0;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+
+.link:disabled {
+  color: var(--ink-soft);
+  text-decoration: none;
+  cursor: default;
+}
+
+.account {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 8px 12px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: rgba(255, 255, 255, 0.04);
+  font-size: 13px;
+  color: var(--ink-soft);
+  overflow-wrap: anywhere;
+}
+
 .form-error {
   margin: 0;
   color: #ff9d95;

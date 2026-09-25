@@ -4,6 +4,7 @@ import { use, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { Chat, isReaction } from '@/components/Chat.js';
 import { FlyingCards } from '@/components/FlyingCards.js';
+import { LoginForm } from '@/components/LoginForm.js';
 import { Hand } from '@/components/Hand.js';
 import { RulesDialog } from '@/components/RulesDialog.js';
 import { SeasonResult } from '@/components/SeasonResult.js';
@@ -11,6 +12,7 @@ import { Table } from '@/components/Table.js';
 import { seasonLabel, seatName } from '@/lib/i18n.js';
 import { UNREACHABLE_MESSAGE } from '@/lib/socket.js';
 import { isMuted, playSound, setMuted } from '@/lib/sound.js';
+import { useAccount } from '@/lib/useAccount.js';
 import { useRoom } from '@/lib/useRoom.js';
 import { useTablePresenter } from '@/lib/useTablePresenter.js';
 import { DISCONNECT_AUTO_PASS_MS, normalizeRoomCode } from '@/shared/protocol.js';
@@ -33,6 +35,7 @@ export default function RoomPage({ params }: { params: Promise<{ code: string }>
     nextSeason,
     sendChat,
   } = useRoom(roomCode);
+  const { ready, account, login } = useAccount();
 
   const presenter = useTablePresenter(view, room);
   const [showRules, setShowRules] = useState(false);
@@ -103,6 +106,19 @@ export default function RoomPage({ params }: { params: Promise<{ code: string }>
     const timer = setInterval(() => setNow(Date.now()), 1000);
     return () => clearInterval(timer);
   }, [stalled, view?.turnSeat]);
+
+  // Opened from a shared link without a login: sign in right here, then the socket reconnects and joins.
+  if (ready && !account && !room) {
+    return (
+      <main className="landing">
+        <div className="landing-card">
+          <div className="wordmark">maskmen</div>
+          <p className="tagline">Vào phòng {roomCode}</p>
+          <LoginForm onLogin={login} />
+        </div>
+      </main>
+    );
+  }
 
   if (!room) {
     return (

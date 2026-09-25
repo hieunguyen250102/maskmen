@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { Move } from '@/engine/types.js';
 import type { Ack, ChatMessage, GameView, RoomView } from '@/shared/protocol.js';
-import { CONNECT_TIMEOUT_MS, getNickname, getPlayerToken, getSocket } from './socket.js';
+import { CONNECT_TIMEOUT_MS, authClient, getNickname, getPlayerToken, getSocket } from './socket.js';
 
 export interface RoomConnection {
   connected: boolean;
@@ -44,6 +44,8 @@ export function useRoom(roomCode: string): RoomConnection {
 
     const join = () => {
       setConnected(true);
+      // The page asks for a login first; logging in reconnects, which lands back here.
+      if (!authClient.loadSession()) return;
       socket.emit(
         'room:join',
         {

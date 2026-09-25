@@ -12,6 +12,8 @@
 import { createServer } from 'node:http';
 import next from 'next';
 import { Server } from 'socket.io';
+import { authHandler } from 'oink-kit/server';
+import { auth } from '@/server/auth.js';
 import { registerHandlers, type GameServer } from '@/server/handlers.js';
 import { reapIdleRooms } from '@/server/rooms.js';
 
@@ -32,7 +34,14 @@ const REAP_INTERVAL_MS = 15 * 60 * 1000;
 async function main(): Promise<void> {
   await app.prepare();
 
+  // POST /auth/request {email}, POST /auth/verify {email, code, challenge}.
+  // Pages hosted elsewhere (Vercel) call these cross-origin, so answer CORS for CORS_ORIGINS.
+  const handleAuth = authHandler(auth, {
+    allowOrigin: (origin) => corsOrigins.includes(origin.replace(/\/$/, '')),
+  });
+
   const httpServer = createServer((req, res) => {
+    if (handleAuth(req, res)) return;
     handle(req, res).catch((error: unknown) => {
       console.error('request failed', error);
       res.statusCode = 500;
