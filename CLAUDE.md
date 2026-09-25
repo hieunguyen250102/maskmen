@@ -154,8 +154,8 @@ never run more than one instance, or players will land on processes that do not 
 
 Login env on Render: `SESSION_SECRET` (keep it stable or everyone is logged out), `MAIL_RELAY_URL` and
 `MAIL_RELAY_SECRET` (the shared oink-mail relay), and `HOST_EMAILS` (empty = anyone who logs in can create
-rooms). Pages hosted on Vercel call `/auth/*` on `NEXT_PUBLIC_SOCKET_URL`, so that origin must be in
-`CORS_ORIGINS`.
+rooms). Pages hosted on Vercel call `/auth/*` on `NEXT_PUBLIC_SOCKET_URL` with `fetch`, which CORS applies to
+(unlike the WebSocket): when `CORS_ORIGINS` is set it must list that origin; unset allows any origin.
 
 ## Testing
 

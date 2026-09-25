@@ -35,9 +35,10 @@ async function main(): Promise<void> {
   await app.prepare();
 
   // POST /auth/request {email}, POST /auth/verify {email, code, challenge}.
-  // Pages hosted elsewhere (Vercel) call these cross-origin, so answer CORS for CORS_ORIGINS.
+  // Pages hosted elsewhere (Vercel) call these cross-origin, so answer CORS: for CORS_ORIGINS when set,
+  // otherwise for anyone. That is safe here: the login uses no cookies, and requests are rate limited.
   const handleAuth = authHandler(auth, {
-    allowOrigin: (origin) => corsOrigins.includes(origin.replace(/\/$/, '')),
+    allowOrigin: (origin) => corsOrigins.length === 0 || corsOrigins.includes(origin.replace(/\/$/, '')),
   });
 
   const httpServer = createServer((req, res) => {
