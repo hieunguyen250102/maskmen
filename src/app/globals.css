@@ -415,6 +415,10 @@ kbd {
 .landing {
   min-height: 100%;
   display: grid;
+  /* An explicit track: an auto one would size itself to the widest child's
+     max-content (a long email in .account), pushing the page sideways. */
+  grid-template-columns: min(560px, 100%);
+  justify-content: center;
   place-items: center;
   align-content: center;
   gap: 20px;
@@ -495,7 +499,11 @@ kbd {
 }
 
 .row > input {
-  flex: 1;
+  /* flex-basis 0 plus width 0 so the field grows from nothing: left at auto an
+     <input> reports its 20-character default as its min-content contribution,
+     which on a narrow phone is wider than the card. */
+  flex: 1 1 0;
+  width: 0;
   min-width: 0;
 }
 
@@ -521,17 +529,25 @@ kbd {
 }
 
 .login-code {
+  /* An <input> defaults to a 20-character intrinsic width, which at this size
+     is wider than the card -- and a grid item will not shrink below that on its
+     own, so the whole page would scroll sideways. */
+  width: 100%;
+  min-width: 0;
   text-align: center;
-  font-size: 28px;
+  font-size: clamp(22px, 7vw, 28px);
   font-weight: 800;
-  letter-spacing: 0.5em;
+  letter-spacing: 0.4em;
   /* balance the spacing letter-spacing leaves after the last digit */
-  text-indent: 0.5em;
+  text-indent: 0.4em;
+  padding: 12px;
 }
 
 .login-links {
   display: flex;
+  flex-wrap: wrap;
   justify-content: space-between;
+  gap: 6px 12px;
   font-size: 13px;
 }
 
